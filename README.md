@@ -1,6 +1,9 @@
 # sinkhorn_jax
 jax implementation of sinkhorn algorithm
 
+![gif](https://github.com/Emile-Aquila/sinkhorn_jax/blob/main/output.gif)
+
+
 <br>
 
 ## Requirements

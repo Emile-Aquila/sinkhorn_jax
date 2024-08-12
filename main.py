@@ -1,6 +1,8 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
+from matplotlib.animation import FuncAnimation
+
 from sinkhorn import d_euclidean_matrix, sinkhorn_log, plot_point_clouds
 import matplotlib.pyplot as plt
 
@@ -13,8 +15,9 @@ if __name__ == '__main__':
 
     # Generate random point clouds
     source_points = jax.random.normal(subkey1, (ns, dim))
+    source_points_start = source_points
     target_points = jax.random.normal(subkey2, (nt, dim)) + jnp.array([1, 1]) * 5
-    plot_point_clouds(source_points, target_points)
+    print("start calculation")
 
     # gradient function
     f_pc2wd = lambda x, y: (
@@ -27,13 +30,25 @@ if __name__ == '__main__':
     )
     vg_pc2wd = jit(jax.value_and_grad(f_pc2wd, argnums=0, has_aux=False))  # point cloud to wasserstein distance
 
-    costs: list = []
+    costs, source_points_list = [], []
     for _ in range(500):  # optimization loop
         cost, grad = vg_pc2wd(source_points, target_points)
         source_points = source_points - 0.1 * grad
         costs.append(cost)
-        print(cost)
+        source_points_list.append(source_points)
 
-    plot_point_clouds(source_points, target_points)
-    plt.plot(costs)
-    plt.show()
+    print(f"calculation finished, wasserstein dist: {costs[-1]}")
+
+    fig, ax = plt.subplots()
+    def update_anim(source_tmp):
+        ax.cla()
+        ax.scatter(source_tmp[:, 0], source_tmp[:, 1], c='b', label="source")
+        ax.scatter(source_points_start[:, 0], source_points_start[:, 1], c='g', label="source_start", marker="o")
+        ax.scatter(target_points[:, 0], target_points[:, 1], c='r', label="target", marker="x")
+        ax.legend()
+        return ax
+
+    anim = FuncAnimation(fig, update_anim, frames=source_points_list, interval=20, cache_frame_data=False)
+    anim.save("output.gif", writer="pillow")
+    plt.close()
+
